@@ -2,12 +2,14 @@ source('./scripts/funciones_Camilo.R')
 
 load.lib('dplyr', 'reshape2', 'readxl', 'ggmap', 'RCurl', 'rjson', 'stringr', 'progress',
          'rgeos', 'sp', 'maptools', 'car', 'geoR', 'gstat', 'gdata', 'geosphere', 'lubridate',
-         'rgdal', 'htmlwidgets')
+         'rgdal', 'htmlwidgets', 'rlist')
 
 #***********************
 ## 1. Cargar datos #####
 #***********************
-Oficinas = readRDS(file = './results/Oficinas.RDS') %>% filter(!is.na(lat))
+Oficinas = readRDS(file = './data/BBVA/data_wrangling/oficinas/201907-Oficinas.RDS') %>% 
+           filter(!is.na(lat)) %>%
+           select(-(Num_Eventos))
 cajeros = readRDS(file = './results/def_Cajeros.RDS') %>% filter(!is.na(lat))
 HEF_total = rbind(readRDS(file = './results/HEF_2015.RDS') %>% filter(!is.na(lat)),
                   readRDS(file = './results/HEF_2016.RDS') %>% filter(!is.na(lat)),
@@ -49,51 +51,42 @@ HEF_total$Arma <- ifelse(HEF_total$`Arma empleada` %in% c('ARMA BLANCA / CORTOPU
 table(HEF_total$Arma)
 table(HEF_total$Arma , HEF_total$`Arma empleada`)
 
-HEF_total$num_events <- 1
-
-p1 = centroides(HEF_total[, c('lon', 'lat', 'num_events')])
-sum(p1$num_events)
-p1$places[which.max(p1$num_events)]
-
-
-p2 = centroides(p1[, c('lon', 'lat', 'num_events')])
-sum(p2$num_events)
-max(p2$num_events)
-
-#***********************************************************************************************************
-#***********************************************************************************************************
-#***********************************************************************************************************
-
-#*********************************
-## Agrupación de Hurtos ####
-#*********************************
-## Encontramos la cantidad de eventos en un radio de 2 km alrededor
-## de cada oficina.
-distm(c(Oficinas$lon[1], Oficinas$lat[1]), c(p2$lon[3], p2$lat[3]))/1000
-
-peligro = as.data.frame(
-  round(
-    distm(Oficinas[, c('lon', 'lat')], p2[, c('lon', 'lat')])/1000
-  ,2)
-)
-
-acumulador = NULL
-for(fila in 1:nrow(peligro)){
-  cuenta = sum(
-    p2$num_events[which(peligro[fila, ] <= 0.5)]
-    )
+## calculamos número de eventos tipificados por arma para cada oficina
+Oficinas_eventos <- Oficinas
+types = unique(HEF_total$Arma)
+df_list = list()
+for(type in types){
+  BD <- HEF_total %>%
+        filter(Arma == type)
   
-  acumulador = c(acumulador, cuenta)
-  
+  p_events <- centroids_finder(BD)
+  Oficinas_eventos$acumulator <- events_acum(locations = Oficinas, events_points = p_events, r = 0.5)
+  Oficinas_eventos$type = type
+  df_list <- list.append(df_list, Oficinas_eventos)
 }
-Oficinas$Num_Eventos = acumulador
+length(df_list)
 
-result_Oficinas = Oficinas %>% 
-                  select(CIUDAD, `NOMBRE OFICINA`, DIRECCIÓN, lat, lon, Num_Eventos) %>%
-                  arrange(desc(Num_Eventos))
+Oficinas_eventos <- bind_rows(df_list)
 
-write.table(result_Oficinas, file = './results/201907_Riesgo_Oficinas.csv', sep = ';', row.names = F,
-            dec = ',')
+Oficinas_eventos <- Oficinas_eventos %>%
+                    dcast(CIUDAD + `NOMBRE OFICINA` + DIRECCIÓN + lat + lon ~ type, 
+                          value.var = 'acumulator',
+                          fun.aggregate = sum) 
+
+Oficinas_eventos$total_events <- rowSums(Oficinas_eventos[,tail(names(Oficinas_eventos), 
+                                                                length(types))])
+
+Oficinas_eventos = Oficinas_eventos %>% 
+                   arrange(desc(total_events))
+
+write.table(Oficinas_eventos, 
+            file = './results/Seguridad oficinas//201907_Riesgo_Oficinas.csv', 
+            sep = ';', row.names = F, dec = ',')
+
+#***********************************************************************************************************
+#***********************************************************************************************************
+#***********************************************************************************************************
+
 
 #*************************************************
 ## Agregación casos de vandalismo x ATM

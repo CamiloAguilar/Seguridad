@@ -441,3 +441,119 @@ mondf <- function(d1, d2) {
   abs(monnb(d2) - monnb(d1) )
   }
 
+
+## post function for web scrapping
+## on www.bancos-colombia.com
+make_post <- function(value, bank){
+  petition <- list(
+    accion = "actualizar-buscador",
+    id = "listaProvincias",
+    valor = value
+  )
+  
+  res <- POST("https://www.bancos-colombia.com/config/ModulesAjax.php", 
+              body = petition, 
+              encode = "form", 
+              add_headers(`origin` = 'https://www.bancos-colombia.com',
+                          `referer` = paste0('https://www.bancos-colombia.com/', bank),
+                          `x-requested-with` = 'XMLHttpRequest'),
+              verbose())
+  
+  #res_t <- content(res, as="text")
+  #res_h <- paste0(unlist(strsplit(res_t, "\r\n"))[-1], sep="", collapse="\n")
+
+  return(res)
+} 
+
+## Obtiene lista de departamentos o municipios según se escoja
+get_list_values <- function(url, find, css){
+  #list_values <- read_html(url) %>% 
+  #  html_nodes(css) 
+  
+  list_values <- read_url(url, css)
+  
+  if(!is.na(list_values[1])){
+    ind <- which(grepl(paste0("id=\"",find,"\""), as.character(list_values)))
+    texto_completo <- as.character(list_values[ind])
+    
+    buscar <- "<option value=\"/"
+    texto_completo <- unlist(str_split(texto_completo, '\n'))
+    texto_completo <- texto_completo[str_detect(texto_completo, pattern = buscar)]
+    
+    
+    list_values = NULL
+    values = NULL
+    for(pos in 1:length(texto_completo)){
+      res <- read_html(texto_completo[pos]) %>%
+        html_text()
+      list_values = c(list_values, res)
+      
+      # get values for POST
+      res <- unlist(str_split(texto_completo[pos], '\"'))
+      res <- res[grepl("^/", res)]
+      
+      values = c(values, res)
+    }
+    
+    return(list(list_values = list_values, values = values))
+  }
+  else{
+    return(list(list_values = NA, values = NA))
+  }
+  
+  
+}
+
+## función de lectura con tryCatch
+read_url <- function(url, css){
+  out <- tryCatch(
+    {
+      read_html(url) %>%
+        html_nodes(css)
+    },
+    error = function(cond){
+      message('No hay información para ese pueblito...\n')
+      message(cond, '\n')
+      return(NA)
+    }
+  )
+  return(out)
+}
+
+# This function find centroids of a events cluster.
+centroids_finder <- function(BD){
+  BD$num_events <- 1
+  BD <- BD %>%
+    #filter(get(vtgroup) == grouper) %>%
+    select(lon, lat, num_events)
+  
+  p1 = centroides(BD)
+  sum(p1$num_events)
+  p1$places[which.max(p1$num_events)]
+  
+  
+  p2 = centroides(p1[, c('lon', 'lat', 'num_events')])
+  sum(p2$num_events)
+  max(p2$num_events)
+  
+  return(p2)
+} 
+
+## this function acummulates number of events near a given radius (km)
+events_acum <- function(locations, events_points, r = 0.5){
+  peligro = as.data.frame(
+    round(
+      distm(locations[, c('lon', 'lat')], events_points[, c('lon', 'lat')])/1000
+      ,2)
+  )
+  
+  acumulator = NULL
+  for(fila in 1:nrow(peligro)){
+    count = sum(
+      events_points$num_events[which(peligro[fila, ] <= r)]
+    )
+    acumulator = c(acumulator, count)
+  }
+  
+  return(acumulator)
+}

@@ -2,7 +2,7 @@ source('./scripts/funciones_Camilo.R')
 
 load.lib('dplyr', 'reshape2', 'readxl', 'ggmap', 'RCurl', 'rjson', 'stringr', 'progress',
          'rgeos', 'sp', 'maptools', 'car', 'geoR', 'gstat', 'gdata', 'geosphere', 'lubridate',
-         'rgdal', 'htmlwidgets')
+         'rgdal', 'htmlwidgets', 'caret')
 
 fecha_informe <- as.Date.character('2019-06-01')
 #*************************
@@ -158,7 +158,7 @@ consolida_cajeros$LLAVE_DE_SEGURIDAD <- ifelse(is.na(consolida_cajeros$LLAVE_DE_
                                                'NoIndica', consolida_cajeros$LLAVE_DE_SEGURIDAD)
 
 var_factor <- c('TERRITORIAL', 'ZONA', 'CAJEROS_VIP',  
-                'PROVEEDOR_DE_MONITOREO', 'MARCA', 'MODELO', 'TIPO_DE_PROCESADOR_DIEBOLD',
+                'MARCA', 'MODELO', 'TIPO_DE_PROCESADOR_DIEBOLD',
                 'CARGA', 'NIVEL_DE_PROVISION', 'UBICACIÓN_ESPECIFICA', 'SITE_TOPPER',
                 'SEGMENTO', 'TIPO_DE_UBICACIÓN', 'TRANSACCIONALIDAD_L_V', 
                 'TRANSACCIONALIDAD_FINES_DE_SEMANA', 'PROTECTOR_DE_TECLADO',
@@ -275,7 +275,74 @@ table(BD_model$HORARIO_DE_SERVICIO, BD_model$is_vandal_month)
 #***********************************
 ## 4. Train_test ####
 #***********************************
+set.seed(3456)
+trainIndex <- createDataPartition(BD_model$is_vandal_month, p = .7, 
+                                  list = FALSE, 
+                                  times = 1)
 
+train <- BD_model[trainIndex,]
+table(train$is_vandal_month)
+
+test <- BD_model[-trainIndex,]
+table(test$is_vandal_month)
+
+
+#***********************************
+## 5. Models ####
+#***********************************
+
+#Nombre_del__Departamento + MODELO + SEGMENTO + UBICACIÓN_ESPECIFICA + FECHA_DE_MAQUINA + HORARIO_DE_SERVICIO
+# + diff_4 + diff_5 + diff_6 + diff_7 + diff_8 + diff_9 + 
+
+mod1 <- glm(is_vandal_month ~ vand_12m + ZONA +
+              diff_1 + diff_2 + diff_3 + is_vandal + lon + lat +
+              ATH + Bancolombia + Davivienda + MULTIVENDOR - 1, 
+            family = binomial(link = "logit"), data = train)
+
+summary(mod1)  
+ 
+  
+## OTRO MODELO
+## Revisa columnas CONSTANTES
+for(col in names(train)){
+  if(length(unique(train[, col])) < 2) print(col)
+}
+
+
+fitControl <- trainControl(## 10-fold CV
+  method = "repeatedcv",
+  number = 10,
+  ## repeated ten times
+  repeats = 10)
+
+gbmGrid <-  expand.grid(interaction.depth = c(1, 5, 9), 
+                        n.trees = (1:30)*50, 
+                        shrinkage = 0.1,
+                        n.minobsinnode = 20)
+
+nrow(gbmGrid)
+
+set.seed(825)
+gbmFit2 <- train(is_vandal_month ~ ., data = train, 
+                 method = "gbm", 
+                 trControl = fitControl, 
+                 verbose = FALSE, 
+                 ## Now specify the exact models 
+                 ## to evaluate:
+                 tuneGrid = gbmGrid)
+
+gbmFit2$modelInfo
+saveRDS(gbmFit2, './results/models/gbmFit2.RDS')
+
+whichTwoPct <- tolerance(gbmFit2$results, metric = "ROC", tol = 2, maximize = TRUE)  
+cat("best model within 2 pct of best:\n")
+
+confusionMatrix(predict(gbmFit2, train), 
+                train$is_vandal_month, positive = '1')
+  
+confusionMatrix(predict(gbmFit2, test), 
+                test$is_vandal_month, positive = '1')
+  
 
 
 
