@@ -77,9 +77,11 @@ bank_scaping <- function(bancos){
       total = length(list_dptos$values),
       clear = FALSE, width= 60
       )
+    count_dpto = 1
     for(dpto in list_dptos$values){
       pb$tick()
       message('\n buscando sucursales para banco ', banco, ' en ', dpto)
+      dpto_name <- list_dptos$list_values[count_dpto]
       #****************************************
       ## Selección lista municipios ####
       #****************************************
@@ -102,18 +104,25 @@ bank_scaping <- function(bancos){
         #**************************
         ## Sucursales ####
         #**************************
-        url2 <- paste(url, mcpio, dpto, sep='-')
-        url2 <- tolower(stri_trans_general(url2,"Latin-ASCII"))
-        url2
+        if(mcpio %in% capitals){
+          url2 <- paste(url, mcpio, dpto_name, sep='-')
+          url2 <- tolower(stri_trans_general(url2,"Latin-ASCII"))
+          url2
+        } else {
+          url2 <- paste(url, mcpio, sep='-')
+          url2 <- tolower(stri_trans_general(url2,"Latin-ASCII"))
+          url2
+        }
         
         css <- "a.truncate"
         dir <- read_url(url2, css) 
         if(!is.na(dir[1])){
           directions <- c(directions, html_text(dir))
           bank <- c(bank, rep(banco, length(directions)))
-          city <- c(mcpio, rep(banco, length(directions)))
+          city <- c(city, rep(mcpio, length(directions)))
         }
       }
+      count_dpto = count_dpto + 1
     }
   }
   
@@ -124,7 +133,7 @@ bank_scaping <- function(bancos){
 }
 
 p = bank_scaping(bancos)
-
+saveRDS(p, './results/scraping.RDS')
 
 
 
