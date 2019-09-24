@@ -24,6 +24,13 @@ head(HEF)
 
 location1 = paste(HEF$Barrio, HEF$Municipio, 'Colombia', sep=" , ")
 location2 = paste(HEF$Municipio, HEF$Departamento, 'Colombia', sep=" , ")
+
+## Tabla dinámica
+BD_Georef <- data.frame(location1, location2) %>%
+             group_by(location1, location2) %>%
+             summarise(n=n())
+
+
 API_key = rjson::fromJSON(file='./key/api_key.json')
 key = API_key$google
 
@@ -33,24 +40,27 @@ geoClean(location2[1:6], type = "Zones")
 
 #geoBBVA(key, location1[1], location2[1])
 
+#**************************************
+## Inicia Geo referenciación ####
+#**************************************
 zipcode = c()
 lat = c()
 lon = c()
 
-pb <- progress_bar$new(total = length(location1))
-for(i in 1:length(location1)){
+pb <- progress_bar$new(total = length(BD_Georef$location1))
+for(i in 1:length(BD_Georef$location1)){
   pb$tick()
-  p = geoBBVA_Zones(key = key, location1[i], location2[i])
+  p = geoBBVA_Zones(key = key, BD_Georef$location1[i], BD_Georef$location2[i])
   zipcode = c(zipcode, p$zipcode)
   lat = c(lat, p$geocode$lat)
   lon = c(lon, p$geocode$lng)
 }
 
-dim(HEF)[1]
+dim(BD_Georef)[1]
 length(zipcode)
-HEF$zipcode = zipcode
-HEF$lat = lat
-HEF$lon = lon
+BD_Georef$zipcode = zipcode
+BD_Georef$lat = lat
+BD_Georef$lon = lon
 
 #*********************************
 ## Validación de los resultados
