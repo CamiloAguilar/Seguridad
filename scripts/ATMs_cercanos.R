@@ -28,6 +28,10 @@ API_key$google_api
 p <- search_API(cajeros$lat[prueba], cajeros$lon[prueba],
                 API_key = API_key$google_api) 
 
+summary(p)
+p$results[[1]]
+
+
 length(p$results)
 p$results[[1]]$name
 p$results[[1]]$vicinity

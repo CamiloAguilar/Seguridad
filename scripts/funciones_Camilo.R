@@ -231,15 +231,23 @@ geoBBVA_Zones <- function(key, location1, location2){
   ## Get geocode
   message("\n... Consultando API Google ", get_json1)
   raw_data <- tryCatch({
-    p = fromJSON(file = get_json1)$results[[1]]$address_components
-    if(length(p) < 3){
+    p = fromJSON(file = get_json1)#$results[[1]]$address_components
+    if(p$status == 'OK'){
+      components = p$results[[1]]$address_components
+      if(length(components) < 3){
+        print('location1 no encontrada... buscando location2')
+        print(location2)
+        message("\n... Consultando API Google ", get_json2)
+        fromJSON(file = get_json2)
+      } else {
+        p #fromJSON(file = get_json1)
+      }
+    } else {
       print('location1 no encontrada... buscando location2')
       print(location2)
       message("\n... Consultando API Google ", get_json2)
       fromJSON(file = get_json2)
-      } else {
-          fromJSON(file = get_json1)
-          }
+    }
   },
   error = function(cond){
     message('\n ***** Imposible obtener información para ', location,'  *****\n')

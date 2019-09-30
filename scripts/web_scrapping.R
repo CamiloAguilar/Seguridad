@@ -135,5 +135,68 @@ bank_scaping <- function(bancos){
 p = bank_scaping(bancos)
 saveRDS(p, './results/scraping.RDS')
 
+#****************************************************************************************************
+#****************************************************************************************************
 
+url <- 'http://www.banrep.gov.co/es/indices-del-mercado-bursatil-colombiano'
+
+#**************************
+## búsqueda departamentos
+#**************************
+## parámetros de búsqueda
+css1 <- "table.content_table"
+css2 <- "a"
+
+p <- read_html(url) %>% html_nodes(css1)#read_url(url, css1) 
+p <- p[1] %>% html_nodes(css2)
+p
+
+p <- unlist(str_split(p[2], '\"'))
+p <- str_remove_all(p[2], 'amp;')
+
+download.file(url = 'http://obieebr.banrep.gov.co/analytics/saw.dll?Download&Format=excel2007&Extension=.xlsx&BypassCache=true&Path=%2fshared%2fSeries%20Estad%c3%adsticas_T%2f1.%20%c3%8dndices%20de%20mercado%20burs%c3%a1til%20colombiano%2f1.1.%20IGBC,%20IBB%20e%20IBOMED%2f1.1.1.IMBC_COLCAP%20IQY&lang=es&NQUser=publico&NQPassword=publico&SyncOperation=1', 
+              destfile = 'prueba.xlsx',
+              mode="wb")
+
+a = 'http://obieebr.banrep.gov.co/analytics/saw.dll?Download&Format=excel2007&Extension=.xlsx&BypassCache=true&Path=%2fshared%2fSeries%20Estad%c3%adsticas_T%2f1.%20%c3%8dndices%20de%20mercado%20burs%c3%a1til%20colombiano%2f1.1.%20IGBC,%20IBB%20e%20IBOMED%2f1.1.1.IMBC_COLCAP%20IQY&lang=es&NQUser=publico&NQPassword=publico&SyncOperation=1'
+b = 'http://obieebr.banrep.gov.co/analytics/saw.dll?Download&Format=excel2007&Extension=.xlsx&BypassCache=true&Path=%2fshared%2fSeries%20Estad%c3%adsticas_T%2f1.%20%c3%8dndices%20de%20mercado%20burs%c3%a1til%20colombiano%2f1.1.%20IGBC,%20IBB%20e%20IBOMED%2f1.1.1.IMBC_COLCAP%20IQY&lang=es&NQUser=publico&NQPassword=publico&SyncOperation=1'
+
+a==b
+
+petition <- list(
+  accion = "actualizar-buscador",
+  id = "listaProvincias",
+  valor = value
+)
+
+## https://stackoverflow.com/questions/46552923/downloading-excel-file-using-r
+
+# Es un poco tarde la respuesta pero creo que aún vale la pena aportar una solución.
+# No es posible usar la función download.file puesto que dicho enlace realmente no direcciona directamente al archivo. En realidad es una consulta a una API usando el método GET, por lo que deberías usar otra estructura de código para poder obtener el archivo, situación que puede ocurrir en repetidas oportunidades para los que usamos técnicas de webscraping
+# Te comparto un ejemplo de cómo se obtiene el archivo excel para el ídice COLCAP dario: 
+
+url <- 'http://obieebr.banrep.gov.co/analytics/saw.dll?Download&Format=excel2007&Extension=.xlsx&BypassCache=true&Path=%2fshared%2fSeries%20Estad%c3%adsticas_T%2f1.%20%c3%8dndices%20de%20mercado%20burs%c3%a1til%20colombiano%2f1.1.%20IGBC,%20IBB%20e%20IBOMED%2f1.1.1.IMBC_COLCAP%20IQY&lang=es&NQUser=publico&NQPassword=publico&SyncOperation=1'
+url <- 'http://obieebr.banrep.gov.co/analytics/saw.dll?Download&Format=excel2007&Extension=.xlsx&BypassCache=true&Path=%2fshared%2fSeries%20Estad%c3%adsticas_T%2f1.%20%c3%8dndices%20de%20mercado%20burs%c3%a1til%20colombiano%2f1.1.%20IGBC,%20IBB%20e%20IBOMED%2f1.1.1.IMBC_COLCAP%20IQY&lang=es&NQUser=publico&NQPassword=publico&SyncOperation=1'
+
+
+req <- curl_fetch_memory(url)
+str(req)
+
+content_type = "text/html; charset=utf-8"
+while (content_type == "text/html; charset=utf-8") {
+  request <- GET(url,
+                 add_headers(`Accept` = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', #'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3',#
+                             `Accept-Encoding` = 'gzip, deflate',
+                             `Accept-Language` = 'es-ES,es;q=0.9',
+                             `Connection` = 'keep-alive',
+                             `User-Agent` = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36',
+                             `Host` = 'obieebr.banrep.gov.co'),
+                 write_disk("COLCAP_daily.xlsx", overwrite = T),
+                 verbose()
+  )
+  content_type = request$all_headers[[1]]$headers$`content-type`
+}
+
+
+request$cookies
 
