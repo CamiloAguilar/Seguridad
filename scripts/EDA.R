@@ -344,6 +344,8 @@ confusionMatrix(predict(gbmFit2, test),
                 test$is_vandal_month, positive = '1')
   
 
-
+#*********************************
+## Test model with new data
+#*********************************
 
 

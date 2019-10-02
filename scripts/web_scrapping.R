@@ -138,37 +138,6 @@ saveRDS(p, './results/scraping.RDS')
 #****************************************************************************************************
 #****************************************************************************************************
 
-url <- 'http://www.banrep.gov.co/es/indices-del-mercado-bursatil-colombiano'
-
-#**************************
-## búsqueda departamentos
-#**************************
-## parámetros de búsqueda
-css1 <- "table.content_table"
-css2 <- "a"
-
-p <- read_html(url) %>% html_nodes(css1)#read_url(url, css1) 
-p <- p[1] %>% html_nodes(css2)
-p
-
-p <- unlist(str_split(p[2], '\"'))
-p <- str_remove_all(p[2], 'amp;')
-
-download.file(url = 'http://obieebr.banrep.gov.co/analytics/saw.dll?Download&Format=excel2007&Extension=.xlsx&BypassCache=true&Path=%2fshared%2fSeries%20Estad%c3%adsticas_T%2f1.%20%c3%8dndices%20de%20mercado%20burs%c3%a1til%20colombiano%2f1.1.%20IGBC,%20IBB%20e%20IBOMED%2f1.1.1.IMBC_COLCAP%20IQY&lang=es&NQUser=publico&NQPassword=publico&SyncOperation=1', 
-              destfile = 'prueba.xlsx',
-              mode="wb")
-
-a = 'http://obieebr.banrep.gov.co/analytics/saw.dll?Download&Format=excel2007&Extension=.xlsx&BypassCache=true&Path=%2fshared%2fSeries%20Estad%c3%adsticas_T%2f1.%20%c3%8dndices%20de%20mercado%20burs%c3%a1til%20colombiano%2f1.1.%20IGBC,%20IBB%20e%20IBOMED%2f1.1.1.IMBC_COLCAP%20IQY&lang=es&NQUser=publico&NQPassword=publico&SyncOperation=1'
-b = 'http://obieebr.banrep.gov.co/analytics/saw.dll?Download&Format=excel2007&Extension=.xlsx&BypassCache=true&Path=%2fshared%2fSeries%20Estad%c3%adsticas_T%2f1.%20%c3%8dndices%20de%20mercado%20burs%c3%a1til%20colombiano%2f1.1.%20IGBC,%20IBB%20e%20IBOMED%2f1.1.1.IMBC_COLCAP%20IQY&lang=es&NQUser=publico&NQPassword=publico&SyncOperation=1'
-
-a==b
-
-petition <- list(
-  accion = "actualizar-buscador",
-  id = "listaProvincias",
-  valor = value
-)
-
 ## https://stackoverflow.com/questions/46552923/downloading-excel-file-using-r
 
 # Es un poco tarde la respuesta pero creo que aún vale la pena aportar una solución.
@@ -176,11 +145,6 @@ petition <- list(
 # Te comparto un ejemplo de cómo se obtiene el archivo excel para el ídice COLCAP dario: 
 
 url <- 'http://obieebr.banrep.gov.co/analytics/saw.dll?Download&Format=excel2007&Extension=.xlsx&BypassCache=true&Path=%2fshared%2fSeries%20Estad%c3%adsticas_T%2f1.%20%c3%8dndices%20de%20mercado%20burs%c3%a1til%20colombiano%2f1.1.%20IGBC,%20IBB%20e%20IBOMED%2f1.1.1.IMBC_COLCAP%20IQY&lang=es&NQUser=publico&NQPassword=publico&SyncOperation=1'
-url <- 'http://obieebr.banrep.gov.co/analytics/saw.dll?Download&Format=excel2007&Extension=.xlsx&BypassCache=true&Path=%2fshared%2fSeries%20Estad%c3%adsticas_T%2f1.%20%c3%8dndices%20de%20mercado%20burs%c3%a1til%20colombiano%2f1.1.%20IGBC,%20IBB%20e%20IBOMED%2f1.1.1.IMBC_COLCAP%20IQY&lang=es&NQUser=publico&NQPassword=publico&SyncOperation=1'
-
-
-req <- curl_fetch_memory(url)
-str(req)
 
 content_type = "text/html; charset=utf-8"
 while (content_type == "text/html; charset=utf-8") {

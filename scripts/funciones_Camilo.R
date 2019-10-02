@@ -257,7 +257,7 @@ geoBBVA_Zones <- function(key, location1, location2){
   })
   
   ## Get important info
-  if(raw_data$status != 'OK' | is.na(raw_data)){
+  if(raw_data$status != 'OK' | is.na(raw_data[1])){
     message('\n ***** Imposible obtener información para ', location,'  *****\n')
     message('status: ', raw_data$status)
     res_zipCode = NA

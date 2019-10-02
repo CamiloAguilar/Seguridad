@@ -10,7 +10,7 @@ load.lib('dplyr', 'reshape2', 'readxl', 'ggmap', 'RCurl', 'rjson', 'stringr', 'p
 ## 1. Información Hurtos####
 #*********************************
 
-path <- './data/Policia'
+path <- './data/Policia/Comercios/'
 (f <- list.files(path))
 f[12]
 
@@ -34,6 +34,8 @@ BD_Georef <- data.frame(location1, location2) %>%
   group_by(location1, location2) %>%
   summarise(n=n())
 
+length(BD_Georef$location1)
+length(unique(BD_Georef$location1))
 
 API_key = rjson::fromJSON(file='./key/api_key.json')
 key = API_key$google
@@ -66,17 +68,17 @@ BD_Georef$zipcode = zipcode
 BD_Georef$lat = lat
 BD_Georef$lon = lon
 
-#### resultados parciales del 1 al 179 #####
+#**********************
+## resultados ###
+#**********************
+BD_Georef <- BD_Georef %>% group_by(location1) %>%
+             summarise(zipcode = first(zipcode), lat = first(lat), lon = first(lon))
 
 saveRDS(BD_Georef, file = './data/Policia/BD_Barrios_COL.RDS')
 
 
-####pruebas####
+HEC$llave <- paste(HEC$Barrio, HEC$Municipio, 'Colombia', sep=" , ")
 
-locationf<- geoClean(BD_Georef$location2[181])
-locationf<-str_replace_all(str_replace_all(locationf, pattern = " ", "%20"),
-                           ",", "%2C")
+HEC_2 <- merge(HEC, BD_Georef, by.x = 'llave', by.y = 'location1', all.x = T, all.y = F) %>%
+         select(-(llave))
 
-saveRDS(BD_Georef, file = './data/Policia/BD_Georef.RDS')
-get_json <- paste0(googleAPI_dir, locationf, '&key=', key)
-j <- fromJSON(file = get_json)$results[[1]]$address_components
