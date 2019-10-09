@@ -197,6 +197,9 @@ geoClean = function(string, type='Zones'){
   string = gsub('CEDRO GOLF EL RODEO', 'CEDRO GOLF', string)
   string = gsub('PUENTE ARANDA', 'CARCEL MODELO', string)
   string = gsub('BOMBONA 1', 'BOMBONA', string)
+  string = gsub('VDA[.]', 'VEREDA', string)
+  string = gsub('VRDA[.]', 'VEREDA', string)
+  string = gsub('CGTO', 'CORREGIMIENTO', string)
   string = gsub('[.]', ' ', string)
   
   string = gsub(' E[0-9][0-9] ', '', string)
@@ -215,6 +218,8 @@ geoClean = function(string, type='Zones'){
 }
 
 geoBBVA_Zones <- function(key, location1, location2){
+  limits <- list(lat = c(-4.23, 13.40),
+                 lon = c(-66.855, -81.734))
   require('stringr')
   googleAPI_dir <- "https://maps.googleapis.com/maps/api/geocode/json?address="
   location1 = geoClean(location1)
@@ -231,7 +236,7 @@ geoBBVA_Zones <- function(key, location1, location2){
   ## Get geocode
   message("\n... Consultando API Google ", get_json1)
   raw_data <- tryCatch({
-    p = fromJSON(file = get_json1)#$results[[1]]$address_components
+    p = fromJSON(file = get_json1, simplify = F)#$results[[1]]$address_components
     if(p$status == 'OK'){
       components = p$results[[1]]$address_components
       if(length(components) < 3){
@@ -239,9 +244,20 @@ geoBBVA_Zones <- function(key, location1, location2){
         print(location2)
         message("\n... Consultando API Google ", get_json2)
         fromJSON(file = get_json2)
-      } else {
+      } else if('Colombia' %in% unlist(p$results[[1]]$address_components) ){ #between(p$results[[1]]$geometry$location$lat , limits$lat[1], limits$lat[2]) & between(p$results[[1]]$geometry$location$lng , limits$lon[2], limits$lon[1])
         p #fromJSON(file = get_json1)
+      } else {
+        print('location1 no encontrada... buscando location2')
+        print(location2)
+        message("\n... Consultando API Google ", get_json2)
+        p = fromJSON(file = get_json2)
+        if ('Colombia' %in% unlist(p$results[[1]]$address_components)){
+          p
+        } else {
+          NA
+        }
       }
+      
     } else {
       print('location1 no encontrada... buscando location2')
       print(location2)

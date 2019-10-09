@@ -82,3 +82,6 @@ HEC$llave <- paste(HEC$Barrio, HEC$Municipio, 'Colombia', sep=" , ")
 HEC_2 <- merge(HEC, BD_Georef, by.x = 'llave', by.y = 'location1', all.x = T, all.y = F) %>%
          select(-(llave))
 
+
+
+

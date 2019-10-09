@@ -10,7 +10,8 @@ load.lib('dplyr', 'reshape2', 'readxl', 'ggmap', 'RCurl', 'rjson', 'stringr', 'p
 Oficinas = readRDS(file = './data/BBVA/data_wrangling/oficinas/201907-Oficinas.RDS') %>% 
            filter(!is.na(lat)) %>%
            select(-(Num_Eventos))
-cajeros = readRDS(file = './results/def_Cajeros.RDS') %>% filter(!is.na(lat))
+cajeros = readRDS(file = './data/BBVA/data_wrangling/cajeros/201907_def_Cajeros.RDS') %>% 
+         filter(!is.na(lat))
 HEF_total = rbind(readRDS(file = './results/HEF_2015.RDS') %>% filter(!is.na(lat)),
                   readRDS(file = './results/HEF_2016.RDS') %>% filter(!is.na(lat)),
                   readRDS(file = './results/HEF_2017.RDS') %>% filter(!is.na(lat)),
@@ -20,7 +21,7 @@ HEF_total$Fecha = as.Date.numeric(as.numeric(HEF_total$Fecha), origin = '1899-12
 
 
 #********************************
-## 2. Unificar información #####
+## 2. Agregar información #####
 #********************************
 
 Tipo <- c(rep('Oficina', length(Oficinas$lat)), rep('ATM', length(cajeros$lat)))
@@ -51,7 +52,9 @@ HEF_total$Arma <- ifelse(HEF_total$`Arma empleada` %in% c('ARMA BLANCA / CORTOPU
 table(HEF_total$Arma)
 table(HEF_total$Arma , HEF_total$`Arma empleada`)
 
+#***********************************************************************
 ## calculamos número de eventos tipificados por arma para cada oficina
+#***********************************************************************
 Oficinas_eventos <- Oficinas
 types = unique(HEF_total$Arma)
 df_list = list()
@@ -90,7 +93,10 @@ write.table(Oficinas_eventos,
 
 #*************************************************
 ## Agregación casos de vandalismo x ATM
-#*************************************************
+#************************************************
+## leerla >> C:\Users\c804324\Documents\GitHub\Seguridad\data\BBVA\data_wrangling\vandalismo
+## 201907-geo_vandalismo.RDS
+geo_vandalismo <- readRDS('./data/BBVA/data_wrangling/vandalismo/201907-geo_vandalismo.RDS')
 month(geo_vandalismo$Mes)
 
 agg_vandalismo <- geo_vandalismo %>%
@@ -184,7 +190,7 @@ map <- leaflet() %>%
                    color = ~pal(Tipo), 
                    data = total_bbva)  %>%
   
-  # Markers Hurtos y Vandalismo
+  # Markers Hurtos 
   addMarkers(data = HEF_total,
     lng = HEF_total$lon, lat = HEF_total$lat,
     popup = ~as.character(`Clase de sitio`), 
